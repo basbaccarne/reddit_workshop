@@ -5,6 +5,9 @@ require("tm")
 require("SnowballC")
 require("ggplot2")
 require("jpeg")
+require("wordcloud")
+require("qdap")
+library("topicmodels")
 
 GetPosts <- function(query, subreddit){
         reddit_urls(search_terms = query, 
@@ -97,4 +100,25 @@ plotNetwork <- function(igraph){
                 vertex.label.cex=0.8, 
                 vertex.label.dist=2, 
                 edge.curved=0.2) 
+}
+
+cleanCorpus <- function(corpus){
+        # alles lower case maken
+        corpus <- tm_map(corpus, content_transformer(tolower))
+        
+        # alle punctuation weg
+        corpus <- tm_map(corpus,removePunctuation)
+        
+        # alle nummers weg
+        corpus <- tm_map(corpus,removeNumbers)
+        
+        # alle URLs weg
+        removeURL <- function(x) gsub("http[[alnum:]]*", "", x)
+        corpus <- tm_map(corpus, removeURL)
+        
+        # verwijder stopwoorden  - opgelet: goed kijken naar deze lijst
+        myStopwords <- stopwords("english")
+        corpus <- tm_map(corpus, removeWords, myStopwords)
+        
+        corpus
 }

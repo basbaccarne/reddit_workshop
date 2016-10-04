@@ -15,8 +15,9 @@ subreddit = "memes"
 #### doorloop lijn per lijn met ctrl + enter ####
 #################################################
 
-source("installs.R")            # dit moet je maar een keer doen
-source("functions_libraries.R")
+# dit moet je maar een keer doen
+source("https://raw.githubusercontent.com/basbaccarne/reddit_workshop/master/installs.R")            
+source("https://raw.githubusercontent.com/basbaccarne/reddit_workshop/master/functions_libraries.R")
 
 
 ###### deel 1: analyseren van afbeeldingen ###### 
@@ -79,7 +80,8 @@ gexf <- igraph.to.gexf(igraph)
 capture.output(print(gexf),
                file = "gephi_data.gexf")
 
-# analyseer deze data met Gephi
+
+# analyseer deze data met Gephi (zie handout)
 
 
 
@@ -96,46 +98,23 @@ capture.output(print(gexf),
 # opbouw van het corpus (alle tekst samen + forced als text vector)
 corpus <- Corpus(VectorSource(comments$comment))
 
-# alles lower case maken
-corpus <- tm_map(corpus, content_transformer(tolower))
-
-# alle punctuation weg
-corpus <- tm_map(corpus,removePunctuation)
-
-# alle nummers weg
-corpus <- tm_map(corpus,removeNumbers)
-
-# alle URLs weg
-removeURL <- function(x) gsub("http[[alnum:]]*", "", x)
-corpus <- tm_map(corpus, removeURL)
-
-# verwijder stopwoorden  - opgelet: goed kijken naar deze lijst
-myStopwords <- stopwords("english")
-corpus <- tm_map(corpus, removeWords, myStopwords)
+# cleaning
+corpus <- cleanCorpus(corpus)
 
 # maak een kopie van het corpus (hebben we later nodig)
 corpus_copy <- corpus
 
-# stamwoorden
+# transformeer naar stamwoorden
 corpus <- tm_map(corpus, stemDocument)
 
 # check even een sample om te zien of je transormaties gelukt zijn
-for (i in 1:10){
+for (i in 1:5){
         cat(paste("[[", i, "]]", sep=""))
         writeLines(corpus[[i]])
 }
 
 # stem completion
-        # corpus <- tm_map(corpus, stemCompletion,
-        #               dictionary = corpus_copy)
-
-
-# tel hoeveel het woord "crazy" voorkomt
-crazyCases <- tm_map(corpus, grep, pattern = "\\<crazy")
-sum(unlist(crazyCases))
-
-# voeg woorden die voor jou hetzelfde zijn samen
-corpus <- tm_map(corpus, gsub, pattern="crazy", replacement="crazyness")
+# corpus <- tm_map(corpus, stemCompletion, dictionary = corpus_copy)
 
 # aanmaken van de TDM (term document matrix)
 corpus_clean <- tm_map(corpus, PlainTextDocument)
@@ -143,26 +122,43 @@ tdm <- TermDocumentMatrix(corpus_clean,
                           control = list(wordLengths = c(1, Inf)))
 
 
+
+
 ## B - frequente termen en associaties ##
 
-# meest voorkomende termen
-freq_terms <- findFreqTerms(tdm, lowfreq=15)
+# overzicht termen die min 2 keer voorkomen
+freq_terms <- findFreqTerms(tdm, lowfreq=2)
+freq_terms
 
-# frequentie van de termen
+# frequentie van de termen die meer dan 5 keer voorkomen
 term_freq <- rowSums(as.matrix(tdm))
-term_freq <- subset(term_freq, term_freq >= 15)
+term_freq <- subset(term_freq, term_freq >= 5)
 df <- data.frame(term=names(term_freq), freq=term_freq)
-
-library(ggplot2)
 ggplot(df, aes(x=term, y=freq)) + geom_bar(stat = "identity") + xlab("terms") + ylab("Count") + coord_flip()
 
-findAssocs(tdm, "trump", 0.2)
+# associaties zoeken en omzetten naar een gephi bestand
+termDocMatrix <- tdm
+termDocMatrix <- as.matrix(termDocMatrix)
+termDocMatrix[termDocMatrix>=1] <- 1
+termDocMatrix2 <- termDocMatrix %*% t(termDocMatrix)
 
-install.packages ("wordcloud")
-library("wordcloud")
+termDocMatrix.g <- graph.adjacency(termDocMatrix2, weighted=TRUE, mode="undirected")
+termDocMatrix.g <- simplify(termDocMatrix.g)
+V(termDocMatrix.g)$label <- V(termDocMatrix.g)$name
+V(termDocMatrix.g)$degree <- degree(termDocMatrix.g)
+layout1 <- layout.fruchterman.reingold(termDocMatrix.g)
+plot(termDocMatrix.g, layout=layout1, vertex.size=20, 
+     vertex.label.color="darkred")
+
+gexf2 <- igraph.to.gexf(termDocMatrix.g)
+capture.output(print(gexf2),
+               file = "gephi_data_tdm.gexf")
+
+# wordcloud
 m <- as.matrix(tdm)
 word.freq <- sort(rowSums(m), decreasing=T)
 wordcloud(words = names(word.freq), freq=word.freq, min.freq=3, random.order = F)
+
 
 ## C - clustering ##
 tdm2 <- removeSparseTerms(tdm, sparse=0.95)
@@ -192,10 +188,6 @@ dtm <- as.DocumentTermMatrix(tdm)
 rowTotals <- apply(dtm , 1, sum)        #Find the sum of words in each Document
 dtm.new   <- dtm[rowTotals> 0, ]        #remove all docs without words
 
-
-install.packages("topicmodels")
-library("topicmodels")
-
 lda <- LDA(dtm.new, k=8)
 term <- terms(lda,4)
 term
@@ -205,3 +197,4 @@ dates <- as.Date(strptime(comments$comm_date, "%d-%m-%y"))
 dates.new <-dates[rowTotals> 0] 
 topics <- data.frame(date=dates.new, topic)
 qplot(dates.new, ..count.., data=topics, geom="density", fill=term[topic], position="stack")
+
