@@ -15,3 +15,7 @@ install.packages("qdap")
 install.packages("ggplot2")
 install.packages ("wordcloud")
 install.packages("topicmodels")
+
+# scraping
+install.packages("rvest")
+install.packages("dplyr")
