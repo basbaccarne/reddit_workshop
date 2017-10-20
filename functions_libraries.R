@@ -10,6 +10,9 @@ require(qdap)
 require(topicmodels)
 require(rvest)
 require(dplyr)
+require(tidytext)
+require(tidyr)
+require(sentimentr)
 
 cleanCorpus <- function(corpus){
         # alle URLs weg
