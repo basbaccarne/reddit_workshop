@@ -16,8 +16,8 @@ require(sentimentr)
 
 cleanCorpus <- function(corpus){
         # alle URLs weg
-        removeURL <- function(x) gsub("http[[alnum:]]*", "", x)
-        corpus <- tm_map(corpus, removeURL)
+        # removeURL <- function(x) gsub("http[[alnum:]]*", "", x)
+        # corpus <- tm_map(corpus, removeURL)
         
         # alles lower case maken
         corpus <- tm_map(corpus, content_transformer(tolower))
@@ -33,8 +33,8 @@ cleanCorpus <- function(corpus){
         corpus <- tm_map(corpus, removeWords, myStopwords)
         
         # verwijder vreemde tekens
-        removeSpecialChars <- function(x) gsub("[^a-zA-Z0-9 ]","",x)
-        corpus <- tm_map(corpus, removeSpecialChars)
+        # removeSpecialChars <- function(x) gsub("[^a-zA-Z0-9 ]","",x)
+        # corpus <- tm_map(corpus, removeSpecialChars)
         
         corpus
 }
