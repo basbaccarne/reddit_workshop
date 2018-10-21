@@ -33,8 +33,8 @@ cleanCorpus <- function(corpus){
         corpus <- tm_map(corpus, removeWords, myStopwords)
         
         # verwijder vreemde tekens
-        # removeSpecialChars <- function(x) gsub("[^a-zA-Z0-9 ]","",x)
-        # corpus <- tm_map(corpus, removeSpecialChars)
+        removeSpecialChars <- function(x) gsub("[^a-zA-Z0-9 ]","",x)
+        corpus <- tm_map(corpus, removeSpecialChars)
         
         corpus
 }
